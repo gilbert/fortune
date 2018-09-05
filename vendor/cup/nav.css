@@ -1,0 +1,25 @@
+nav {
+  display: flex;
+  padding: calc(var(--unit) * 3);
+}
+nav .logo {
+  height: var(--nav-height);
+  margin-right: 1rem;
+}
+nav a {
+  color: var(--nav-link-color);
+  opacity: 0.6;
+  display: inline-block;
+  font-size: 85%;
+  font-weight: 600;
+  line-height: 1rem;
+  text-transform: uppercase;
+  vertical-align: middle;
+  padding: 1rem 0.75rem;
+  transition: 0.2s color ease-out;
+}
+nav a:hover {
+  opacity: 1;
+  transition-duration: 0.3s;
+  text-decoration: none;
+}

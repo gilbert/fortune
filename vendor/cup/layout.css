@@ -1,0 +1,28 @@
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.relative { position: relative; }
+
+.w-text {
+  width: var(--readable-text-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ellipse {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.d-block { display: block; }
+
+.flex { flex: 1; }
+.d-flex { display: flex; }
+.d-flex-column { display: flex; flex-direction: column; }
+.d-inline-flex { display: inline-flex; }
+.d-inline-block { display: inline-block; }
+
+.flex-vcenter { align-items: center; }
+.flex-hcenter { justify-content: center; }
+.flex-center { align-items: center; justify-content: center; }

@@ -1,0 +1,55 @@
+.btn, button, input[type='submit'] {
+  background: var(--primary-color);
+  border-radius: 5px;
+  border: none;
+  box-sizing: content-box; /* Force to behave similar to anchor */
+  color: hsl(207, 70%, 97%);
+  cursor: pointer;
+  font-weight: 400;
+  height: var(--btn-height);
+  padding: 0 var(--btn-padding);
+  text-transform: uppercase;
+  transition: opacity 0.4s ease-out;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+}
+
+.btn:hover, button:hover, input[type='submit']:hover {
+  opacity: .8;
+}
+
+.btn.btn-secondary,
+button.btn-secondary {
+  color: white;
+  background: var(--secondary-color);
+}
+
+.btn.btn-success,
+button.btn-success {
+  background: var(--success-color);
+}
+
+.btn.btn-warning,
+button.btn-warning {
+  background: var(--warning-color);
+}
+
+.btn.btn-danger,
+button.btn-danger {
+  background: var(--danger-color);
+}
+
+.btn.btn-small, button.btn-small {
+  font-size: 80%;
+  height: calc(var(--btn-height)*0.8);
+  padding: 0 calc(var(--btn-padding) * 0.8);
+}
+
+
+a.btn {
+  display: inline-block;
+  height: auto;
+  padding: 1.1rem 1.7rem;
+}
+a.btn:hover {
+  text-decoration: none;
+}
