@@ -1,8 +1,32 @@
 import m from '../vendor/mithril/index.js'
 import patch, {setAutoFreeze, DraftObject} from '../vendor/immer/index.js'
-import Mousetrap from '../vendor/mousetrap/index.js'
+import Mousetrap, {MousetrapInstance} from '../vendor/mousetrap/index.js'
 
 setAutoFreeze(false)
+
+export type Pos = { x: number, y: number }
+export type FNodeType = 'fn'
+export type FNode
+  = {
+      id: number
+      name: string
+      type: FNodeType
+      content: string
+      size: [number, number]
+      pos: Pos
+    }
+
+
+export type State = {
+  mode: 'canvas' | 'edit'
+  nodes: FNode[]
+  active: null | Active
+}
+export type Active = {
+  node: FNode
+  onedit: null | ((keyboard: MousetrapInstance, exitEditMode: () => void) => void)
+  offedit: null | (() => void)
+}
 
 var idCounter = 0
 var eventIdCounter = 1
@@ -20,7 +44,7 @@ var events: Record<EventType, Array<{ id: number, cb: Function }>> = {
 }
 
 class App {
-  public states: App.State[] = [{
+  public states: State[] = [{
     nodes: [],
     active: null,
     mode: 'canvas',
@@ -28,19 +52,19 @@ class App {
 
   get state() { return this.states[this.states.length-1] }
 
-  update(next: App.State) {
+  update(next: State) {
     this.states.push(next)
   }
 
-  patch(updater: (state: DraftObject<App.State>) => void) {
+  patch(updater: (state: DraftObject<State>) => void) {
     this.update(
       patch(this.state, state => { updater(state) })
     )
   }
 
-  createNode(pos: App.Pos) {
+  createNode(pos: Pos) {
     this.update(patch(this.state, state => {
-      var newNode: App.FNode = {
+      var newNode: FNode = {
         id: ++idCounter,
         type: 'fn',
         name: `New Node (${idCounter})`,
@@ -76,9 +100,7 @@ class App {
   }
 }
 
-const app = new App()
-
-export default app
+export var current = new App()
 
 
 var canvasMode = new Mousetrap((window as any).document)
@@ -86,25 +108,25 @@ var editMode: null | MousetrapInstance = null
 
 const MOVE_MOD = 25
 canvasMode.bind(['up', 'shift+up'], e => {
-  const active = app.state.active
+  const active = current.state.active
   if ( ! active ) return;
   active.node.pos.y -= MOVE_MOD * (e.shiftKey ? 5 : 1)
   m.redraw()
 })
 canvasMode.bind(['down','shift+down'], e => {
-  const active = app.state.active
+  const active = current.state.active
   if ( ! active ) return;
   active.node.pos.y += MOVE_MOD * (e.shiftKey ? 5 : 1)
   m.redraw()
 })
 canvasMode.bind(['right','shift+right'], e => {
-  const active = app.state.active
+  const active = current.state.active
   if ( ! active ) return;
   active.node.pos.x += MOVE_MOD * (e.shiftKey ? 5 : 1)
   m.redraw()
 })
 canvasMode.bind(['left','shift+left'], e => {
-  const active = app.state.active
+  const active = current.state.active
   if ( ! active ) return;
   active.node.pos.x -= MOVE_MOD * (e.shiftKey ? 5 : 1)
   m.redraw()
@@ -112,9 +134,9 @@ canvasMode.bind(['left','shift+left'], e => {
 
 canvasMode.bind('tab', e => {
   e.preventDefault()
-  var onedit = app.state.active && app.state.active.onedit
+  var onedit = current.state.active && current.state.active.onedit
   if (onedit) {
-    app.patch(state => state.mode = 'edit')
+    current.patch(state => state.mode = 'edit')
 
     canvasMode.pause()
     editMode = new Mousetrap((window as any).document)
@@ -123,9 +145,9 @@ canvasMode.bind('tab', e => {
     var exitEditMode = () => {
       if (exited) return;
       exited = true
-      app.patch(state => state.mode = 'canvas')
+      current.patch(state => state.mode = 'canvas')
 
-      var offedit = app.state.active && app.state.active.offedit
+      var offedit = current.state.active && current.state.active.offedit
       if (offedit) offedit()
       editMode && editMode.destroy()
       editMode = null

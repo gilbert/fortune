@@ -1,4 +1,5 @@
 import m from '../../vendor/mithril/index.js'
+import * as App from '../App'
 import FnNode from './node-types/FnNode.js'
 
 type Attrs = {

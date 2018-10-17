@@ -1,5 +1,5 @@
 import m from '../../../vendor/mithril/index.js'
-import App from '../../App.js'
+import * as App from '../../App.js'
 
 type Attrs = {
   app: App.State
@@ -66,7 +66,6 @@ export default {
         })
       ),
     )
-    )
   }
 } as m.Component<Attrs,State>
 
@@ -74,7 +73,7 @@ export default {
 function select (state: State, attrs: Attrs, dom: Element) {
   var {node} = attrs
 
-  App.selectNode(node.id, {
+  App.current.selectNode(node.id, {
     onedit: (keyboard, exitEditMode) => {
       // LAST TIME: SHOW NODE NAME –––––– BIND EDIT MODE KEYS
       dom.querySelector('textarea')!.focus()

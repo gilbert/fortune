@@ -19,7 +19,7 @@ interface MousetrapStatic {
     reset(): void;
 }
 
-interface MousetrapInstance {
+export interface MousetrapInstance {
     stopCallback: (e: ExtendedKeyboardEvent, element: Element, combo: string) => boolean;
     bind(keys: string|string[], callback: (e: ExtendedKeyboardEvent, combo: string) => any, action?: string): void;
     unbind(keys: string|string[], action?: string): void;
