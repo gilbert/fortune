@@ -1,34 +1,14 @@
 import m from '../vendor/mithril/index.js'
 import patch, {setAutoFreeze, DraftObject} from '../vendor/immer/index.js'
 import Mousetrap, {MousetrapInstance} from '../vendor/mousetrap/index.js'
+import generateAppCode from './backend/generate-app-code.js'
+import * as AppTypes from './AppTypes'
+import * as Nodes from './Nodes.js'
+
+export * from './AppTypes'
 
 setAutoFreeze(false)
 
-export type Pos = { x: number, y: number }
-export type FNodeType = 'fn'
-export type FNode
-  = {
-      id: number
-      name: string
-      type: FNodeType
-      content: string
-      size: [number, number]
-      pos: Pos
-    }
-
-
-export type State = {
-  mode: 'canvas' | 'edit'
-  nodes: FNode[]
-  active: null | Active
-}
-export type Active = {
-  node: FNode
-  onedit: null | ((keyboard: MousetrapInstance, exitEditMode: () => void) => void)
-  offedit: null | (() => void)
-}
-
-var idCounter = 0
 var eventIdCounter = 1
 
 type EventType = 'select-node' | 'tab'
@@ -44,48 +24,99 @@ var events: Record<EventType, Array<{ id: number, cb: Function }>> = {
 }
 
 class App {
-  public states: State[] = [{
-    nodes: [],
+  public states: AppTypes.State[] = [{
+    rootNodeIds: [],
+    nodeMap: {},
     active: null,
     mode: 'canvas',
   }]
 
   get state() { return this.states[this.states.length-1] }
 
-  update(next: State) {
+  get rootNodes() { return this.state.rootNodeIds.map(id => this.state.nodeMap[id]) }
+
+  update(next: AppTypes.State) {
     this.states.push(next)
   }
 
-  patch(updater: (state: DraftObject<State>) => void) {
+  patch(updater: (state: DraftObject<AppTypes.State>) => void) {
     this.update(
       patch(this.state, state => { updater(state) })
     )
   }
 
-  createNode(pos: Pos) {
+  addRootNode(newNode: AppTypes.AnyNode) {
     this.update(patch(this.state, state => {
-      var newNode: FNode = {
-        id: ++idCounter,
-        type: 'fn',
-        name: `New Node (${idCounter})`,
-        content: '// FILL ME IN',
-        size: [4,3],
-        pos: {x: pos.x - (pos.x % 25), y: pos.y - (pos.y % 25)}
-      }
-      state.nodes = state.nodes.concat(newNode)
+      state.rootNodeIds = state.rootNodeIds.concat(newNode.id)
+      state.nodeMap[newNode.id] = newNode
       state.active = { node: newNode, onedit: null, offedit: null }
       console.log("New node", newNode.id)
     }))
   }
 
-  selectNode(id: number, args: {
+  selectNode(nodeId: number, args: {
     onedit: (keyboard: MousetrapInstance, exitEditMode: () => void) => void,
     offedit: () => void,
   }) {
-    var node = this.state.nodes.find(n => n.id === id)
+    var node = this.state.nodeMap[nodeId]
     this.state.active = node
       ? { node, onedit: args.onedit, offedit: args.offedit }
       : this.state.active
+  }
+
+  updateNode<NodeType extends AppTypes.AnyNode["type"]>(
+    newNode: AppTypes.NodesByType[NodeType] & { id: AppTypes.NodeId }
+  ): void {
+    this.update(patch(this.state, state => {
+      state.nodeMap[newNode.id] = newNode
+    }))
+  }
+
+  extendNode<NodeType extends AppTypes.AnyNode["type"]>(
+    parentId: AppTypes.NodeId,
+    newNode: AppTypes.NodesByType[NodeType] & { id: AppTypes.NodeId }
+  ): void {
+    this.update(patch(this.state, state => {
+      state.nodeMap[newNode.id] = newNode
+      state.nodeMap[parentId].out = state.nodeMap[parentId].out.concat([newNode.id])
+    }))
+  }
+
+  enterEditMode() {
+    var onedit = this.state.active && this.state.active.onedit
+    if (onedit) {
+      this.patch(state => state.mode = 'edit')
+
+      canvasMode.pause()
+      editMode = new Mousetrap((window as any).document)
+
+      var exited = false
+      var exitEditMode = () => {
+        if (exited) return;
+        exited = true
+        this.patch(state => state.mode = 'canvas')
+
+        var offedit = this.state.active && this.state.active.offedit
+        if (offedit) offedit()
+        editMode && editMode.destroy()
+        editMode = null
+        canvasMode.unpause()
+        m.redraw()
+      }
+
+      onedit(editMode, exitEditMode)
+
+      editMode.bind('tab', e => {
+        e.preventDefault()
+        exitEditMode()
+      })
+
+      m.redraw()
+    }
+  }
+
+  generateCode() {
+    return generateAppCode(this.state)
   }
 
   // Events
@@ -132,37 +163,20 @@ canvasMode.bind(['left','shift+left'], e => {
   m.redraw()
 })
 
+canvasMode.bind('ctrl+e', e => {
+  var active = current.state.active
+  if ( ! active ) return;
+  console.log("eeee2")
+  var newNode = Nodes.makeFn({
+    x: active.node.pos.x,
+    y: active.node.pos.y + active.node.size[1]*25 + 50,
+  })
+  current.extendNode(active.node.id, newNode)
+  m.redraw()
+})
+
 canvasMode.bind('tab', e => {
   e.preventDefault()
-  var onedit = current.state.active && current.state.active.onedit
-  if (onedit) {
-    current.patch(state => state.mode = 'edit')
-
-    canvasMode.pause()
-    editMode = new Mousetrap((window as any).document)
-
-    var exited = false
-    var exitEditMode = () => {
-      if (exited) return;
-      exited = true
-      current.patch(state => state.mode = 'canvas')
-
-      var offedit = current.state.active && current.state.active.offedit
-      if (offedit) offedit()
-      editMode && editMode.destroy()
-      editMode = null
-      canvasMode.unpause()
-      m.redraw()
-    }
-
-    onedit(editMode, exitEditMode)
-
-    editMode.bind('tab', e => {
-      e.preventDefault()
-      exitEditMode()
-    })
-
-    m.redraw()
-  }
+  current.enterEditMode()
 })
 

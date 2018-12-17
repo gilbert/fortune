@@ -3,16 +3,16 @@ import * as App from '../../App.js'
 
 type Attrs = {
   app: App.State
-  node: App.FnNode
+  node: App.RouteNode
 }
 type State = {
-  content_: null | string
+  url_: null | string
 }
 
 export default {
 
   oninit({ state }) {
-    state.content_ = null
+    state.url_ = null
   },
 
   oncreate({ state, attrs, dom }) {
@@ -44,13 +44,16 @@ export default {
       ),
       m('.content.d-flex-column',
 
-        m('textarea.tab-focus.flex.text-mono', {
-          value: state.content_ !== null ? state.content_ : node.content,
+        m('input[name=url][type=text].tab-focus.flex.text-mono', {
+          value: state.url_ !== null ? state.url_ : node.url,
           onfocus(e: any) {
+            console.log("FOCUS")
             select(state, attrs, e.currentTarget.closest('.node'))
+            state.url_ = node.url
+            App.current.enterEditMode()
           },
           oninput(e: any) {
-            state.content_ = e.target.value
+            state.url_ = e.target.value
           },
           onkeypress(e: any) {
             if (e.key === 'Escape') {
@@ -75,9 +78,10 @@ function select (state: State, attrs: Attrs, dom: Element) {
 
   App.current.selectNode(node.id, {
     onedit: (keyboard, exitEditMode) => {
-      dom.querySelector('textarea')!.focus()
+      ;(dom.querySelector('input[name=url]') as HTMLElement).focus()
       keyboard.bindGlobal('esc', e => {
-        App.current.updateNode({ ...node, content: state.content_ || '' })
+        App.current.updateNode({ ...node, url: state.url_ || '' })
+        state.url_ = null
         exitEditMode()
       })
     },
